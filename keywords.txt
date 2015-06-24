@@ -1,0 +1,72 @@
+#######################################
+# Syntax Coloring Map For Test
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+bmes	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+bme_com_initialize	KEYWORD2
+set_adc	KEYWORD2
+
+meas_act_bmes	KEYWORD2
+bme_self_test	KEYWORD2
+reset_flags	KEYWORD2
+
+set_flag_over KEYWORD2
+set_bal2vol	KEYWORD2
+set_tolerance	KEYWORD2
+set_balancing	KEYWORD2
+stop_bal	KEYWORD2
+set_fan	KEYWORD2
+
+get_bme_flag	KEYWORD2
+get_cell_vol	KEYWORD2
+get_cell_temp	KEYWORD2
+get_bme_hst	KEYWORD2
+get_bme_Vref	KEYWORD2
+get_bme_totalV	KEYWORD2
+get_bme_itmp	KEYWORD2
+get_crc	KEYWORD2
+get_st_cell	KEYWORD2
+get_st_gpio	KEYWORD2
+get_st_stat	KEYWORD2
+
+data_voltage	KEYWORD2
+data_temp	KEYWORD2
+data_hst	KEYWORD2
+data_vtotal	KEYWORD2
+data_itemp	KEYWORD2
+data_bme_flag	KEYWORD2
+data_bme_flagOver	KEYWORD2
+
+cal_bme_flag	KEYWORD2
+cal_sum_of_bmes	KEYWORD2
+cal_min_of_bmes	KEYWORD2
+cal_max_of_bmes	KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+BME_NUM	LITERAL1
+VC_NUM	LITERAL1
+BYTE_INT	LITERAL1
+TEMP_NUM	LITERAL1
+HS_TEMP_NUM	LITERAL1
+AUX_CH_ALL	LITERAL1
+STAT_CH_ALL	LITERAL1
+CELL_CH_ALL	LITERAL1
+MD_NORMAL	LITERAL1
+DCP_DISABLED	LITERAL1
+DCP_ENABLED	LITERAL1
