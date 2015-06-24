@@ -225,7 +225,7 @@ public:
 	void bme_self_test();
 	void reset_flags();
 
-	void set_flag_over(uint8_t bme_addr, uint8_t flagNum);
+	void set_flag_over(uint16_t priority2Flag);
 	uint8_t set_bal2vol(float bal2vol);
 	void set_tolerance(float bal_tolerance);
 	void set_balancing(bool bal_on);
@@ -278,8 +278,6 @@ private:
 	// FLAG LIMITS
 	float myAccuracyLimit;	//if myVol_ref2 is within myAccuracyLimit of 3V then the ADC is working
     float myVolHighAlarm;  //high virtual cell myVoltage limit for myVoltage error
-    float myVolLowBalAlarm;   // the myVoltage at whitch the system will not go in to balancing mode
-    float myBalRecLimit;     // minimum myVoltage limit for recommending balancing
     float myVolLowWarn;       //low virtual cell myVoltage limit for myVoltage warning
     float myVolLowAlarm;      //low virtual cell myVoltage limit for myVoltage error
     float myDeadBatAlarm;   // the myVoltage at whitch the system will not go in to charge mode

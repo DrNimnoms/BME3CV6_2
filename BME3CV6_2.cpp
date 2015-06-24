@@ -83,8 +83,6 @@ bmes::bmes(uint8_t csPin)
   //CONSTRUCT LIMITS
     myAccuracyLimit = 0.015; //if myVol_ref2 is within myAccuracyLimit of 3V then the ADC is working
     myVolHighAlarm = 4.205;  //high virtual cell myVoltage limit for myVoltage error
-    myVolLowBalAlarm  = 3.7;   // the myVoltage at which the system will not go in to balancing mode
-    myBalRecLimit = 3.9;      // minimum myVoltage limit for recommending balancing
     myVolLowWarn = 3.2;       //low virtual cell myVoltage limit for myVoltage warning
     myVolLowAlarm = 3.0;      //low virtual cell myVoltage limit for myVoltage error
     myDeadBatAlarm = 2.5;   // the myVoltage at which the system will not go in to charge mode
@@ -878,10 +876,12 @@ void bmes::reset_flags(){
 /***********************************************//**
  \brief set a bme override flags 
 *************************************************/
-void bmes::set_flag_over(uint8_t bme_addr, uint8_t flagNum){
-  if(bme_addr<BME_NUM && bme_addr>= 0 && flagNum>=0 && flagNum<16){
-    myBmeFlagOverride[bme_addr] |= (1<<flagNum);
-  } 
+void bmes::set_flag_over(uint16_t priority2Flag){
+  for(int current_bme = 0; current_bme<BME_NUM; current_bme++)
+  {
+    myBmeFlagOverride[current_bme] |= (myBmeFlag[current_bme] & priority2Flag);
+  }
+  
 }
 
 /***********************************************//**
@@ -912,8 +912,6 @@ void bmes::set_meas_flags()
     else if(minVol < myVolLowAlarm) myBmeFlag[current_bme] |= (1<<7);
     // set low myVoltage warning 
     else if(minVol < myVolLowWarn) myBmeFlag[current_bme] |= (1<<6);
-    // set low balance myVoltage alarm 
-    if(minVol < myBalRecLimit) myBmeFlag[current_bme] |= (1<<13);
 
     // set bme mismatch alarm
     if(abs(myTotal_bme_vol[current_bme]-cal_bme_sum(current_bme)) > myVolMismatch){
