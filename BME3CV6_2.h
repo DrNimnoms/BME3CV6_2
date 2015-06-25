@@ -219,6 +219,7 @@ public:
 	bmes(uint8_t csPin);  
 	//
 	void set_adc(uint8_t md, uint8_t dcp, uint8_t ch, uint8_t chg, uint8_t chst);
+	void set_limits(float limits[13]);
 	// void set_vol_limits(float min_vol, float max_vol);
 	
 	void meas_act_bmes();
@@ -281,7 +282,7 @@ private:
     float myVolLowWarn;       //low virtual cell myVoltage limit for myVoltage warning
     float myVolLowAlarm;      //low virtual cell myVoltage limit for myVoltage error
     float myDeadBatAlarm;   // the myVoltage at whitch the system will not go in to charge mode
-    float myVolMismatch;       //myVoltage mismatch limit between calculated and measured total myVoltage of half-string
+    float myVolBmeMismatch;       //myVoltage mismatch limit between calculated and measured total myVoltage of half-string
     float myTempVCAlarm;    //virtual cell myTemperature limit for myTemperature error
     float myTempTiAlarm;    // BME LTC chip myTemperature limit for myTemperature error
     float myTempHSAlarm;   //heat sink myTemperature limit for myTemperature error

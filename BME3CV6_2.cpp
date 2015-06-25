@@ -86,15 +86,37 @@ bmes::bmes(uint8_t csPin)
     myVolLowWarn = 3.2;       //low virtual cell myVoltage limit for myVoltage warning
     myVolLowAlarm = 3.0;      //low virtual cell myVoltage limit for myVoltage error
     myDeadBatAlarm = 2.5;   // the myVoltage at which the system will not go in to charge mode
-    myVolMismatch  = 0.06;   //myVoltage mismatch limit between calculated and measured total myVoltage of battery module
+    myVolBmeMismatch  = 0.06;   //myVoltage mismatch limit between calculated and measured total myVoltage of battery module
     myTempVCAlarm = 60;    //virtual cell myTemperature limit for myTemperature error
     myTempTiAlarm = 75;    // BME LTC chip myTemperature limit for myTemperature error
     myTempHSAlarm = 120;   //heat sink myTemperature limit for myTemperature error
     myTempVCWarn = 40;    //virtual cell myTemperature limit for myTemperature warning
     myTempTiWarn = 65;    //BME LTC chip myTemperature limit for myTemperature warning
     myTempHSWarn = 110;   //heat sink myTemperature limit for myTemperature warning
-    myLowTempAlarm = -40; // Low myTemperature sensors limit for low myTemperature alarm 
-    
+    myLowTempAlarm = -40; // Low myTemperature sensors limit for low myTemperature alarm     
+}
+
+/*!******************************************************************************************************************
+  \brief set the limits for the bmes
+
+ ******************************************************************************************************************/
+void bmes::set_limits(float limits[13])
+{
+  //?? note put in limit checks for saftey
+  //set BME FLAG LIMITS
+    myAccuracyLimit = limits[0]; //if myVol_ref2 is within myAccuracyLimit of 3V then the ADC is working
+    myVolHighAlarm = limits[1];  //high virtual cell myVoltage limit for myVoltage error
+    myVolLowWarn = limits[2];       //low virtual cell myVoltage limit for myVoltage warning
+    myVolLowAlarm = limits[3];      //low virtual cell myVoltage limit for myVoltage error
+    myDeadBatAlarm = limits[4];   // the myVoltage at which the system will not go in to charge mode
+    myVolBmeMismatch  = limits[5];   //myVoltage mismatch limit between calculated and measured total myVoltage of battery module
+    myTempVCAlarm = limits[6];    //virtual cell myTemperature limit for myTemperature error
+    myTempTiAlarm = limits[7];    // BME LTC chip myTemperature limit for myTemperature error
+    myTempHSAlarm = limits[8];   //heat sink myTemperature limit for myTemperature error
+    myTempVCWarn = limits[9];    //virtual cell myTemperature limit for myTemperature warning
+    myTempTiWarn = limits[10];    //BME LTC chip myTemperature limit for myTemperature warning
+    myTempHSWarn = limits[11];   //heat sink myTemperature limit for myTemperature warning
+    myLowTempAlarm = limits[12]; // Low myTemperature sensors limit for low myTemperature alarm     
 }
 
 /*!****************************************************
@@ -914,7 +936,7 @@ void bmes::set_meas_flags()
     else if(minVol < myVolLowWarn) myBmeFlag[current_bme] |= (1<<6);
 
     // set bme mismatch alarm
-    if(abs(myTotal_bme_vol[current_bme]-cal_bme_sum(current_bme)) > myVolMismatch){
+    if(abs(myTotal_bme_vol[current_bme]-cal_bme_sum(current_bme)) > myVolBmeMismatch){
       myBmeFlag[current_bme] |= (1<<9);
     } 
 
