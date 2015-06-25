@@ -80,7 +80,7 @@ bmes::bmes(uint8_t csPin)
     }
   }
 
-  //CONSTRUCT LIMITS
+  //BME FLAG LIMITS
     myAccuracyLimit = 0.015; //if myVol_ref2 is within myAccuracyLimit of 3V then the ADC is working
     myVolHighAlarm = 4.205;  //high virtual cell myVoltage limit for myVoltage error
     myVolLowWarn = 3.2;       //low virtual cell myVoltage limit for myVoltage warning
