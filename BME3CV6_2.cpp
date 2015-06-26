@@ -193,7 +193,7 @@ void bmes::bme_self_test(){
   // meas_act_bmes();
   bme_adax();     // ? needed to reboot aux reg after a self test
   // // delayMicroseconds(BME_CON_DELAY_AUX);
-   bme_adcv();     // ? needed to reboot aux reg after a self test
+  bme_adcv();     // ? needed to reboot aux reg after a self test
   // // delayMicroseconds(BME_CON_DELAY_CV);
   // bme_adstat();
   // // delayMicroseconds(BME_CON_DELAY_ST);
