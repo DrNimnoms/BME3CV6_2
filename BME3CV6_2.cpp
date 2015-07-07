@@ -75,7 +75,7 @@ bmes::bmes(uint8_t csPin)
     myStStat[current_bme] = false;
     myVol_ref2[current_bme] = 3.0;
     myTotal_bme_vol[current_bme] = 3.7*VC_NUM;
-    for (int current_cell = 0; current_cell<BME_NUM; current_cell++) {
+    for (int current_cell = 0; current_cell<VC_NUM; current_cell++) {
       myVoltage[current_bme][current_cell]=3.7;
     }
   }
