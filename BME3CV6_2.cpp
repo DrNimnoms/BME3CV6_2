@@ -39,6 +39,8 @@ Copyright 2015 General Atomics (GA)
 #include <stdint.h>
 #include <Arduino.h>
 #include <SPI.h>
+#include <MATH.h>
+#include <Metro.h>
 #include "BME3CV6_2.h"
 
 /*!******************************************************************************************************************
@@ -66,6 +68,7 @@ bmes::bmes(uint8_t csPin)
   myBal2Vol = 4.2;
   myBalTolerance = 0.002;  // the max myVoltage that is allowed durring balancing 
   myBalOn = false;
+  myFanAll = false;
   for(int current_bme = 0; current_bme<BME_NUM; current_bme++) {
     myDcc[current_bme] = 0;
     myFanOn[current_bme] = false;
@@ -89,10 +92,10 @@ bmes::bmes(uint8_t csPin)
     myVolBmeMismatch  = 0.06;   //myVoltage mismatch limit between calculated and measured total myVoltage of battery module
     myTempVCAlarm = 60;    //virtual cell myTemperature limit for myTemperature error
     myTempTiAlarm = 75;    // BME LTC chip myTemperature limit for myTemperature error
-    myTempHSAlarm = 120;   //heat sink myTemperature limit for myTemperature error
+    myTempHSAlarm = 140;   //heat sink myTemperature limit for myTemperature error
     myTempVCWarn = 40;    //virtual cell myTemperature limit for myTemperature warning
     myTempTiWarn = 65;    //BME LTC chip myTemperature limit for myTemperature warning
-    myTempHSWarn = 110;   //heat sink myTemperature limit for myTemperature warning
+    myTempHSWarn = 125;   //heat sink myTemperature limit for myTemperature warning
     myLowTempAlarm = -40; // Low myTemperature sensors limit for low myTemperature alarm     
 }
 
@@ -132,9 +135,11 @@ void bmes::meas_act_bmes(){
   tempo = meas_vol();
   crc_tempo = tempo;
   data2vol(tempo);
+  wakeup_sleep();
   tempo = meas_temp();
   crc_tempo |= tempo;
   data2temp(tempo);
+  wakeup_sleep();
   tempo = meas_stat();
   data2stat(tempo);
   crc_tempo |= tempo;
@@ -143,10 +148,12 @@ void bmes::meas_act_bmes(){
 
   for(int current_bme = 0; current_bme<BME_NUM; current_bme++){
     myDcc[current_bme]=0;
+    // Serial.print(balTempCon[current_bme]);
+    // Serial.print(",");
     if(myBalOn) balance_bme(current_bme);
     bme_wrcfg(current_bme);
   } 
-
+  // Serial.println(" ");
   int2bool(BME_NUM,crc_tempo, myCrcCheck);
 }
 
@@ -155,14 +162,25 @@ void bmes::meas_act_bmes(){
  puts all the information in myDcc
 *****************************************************/
 void bmes::balance_bme(uint8_t bme_addr){
-
+  // if(bme_addr==0){
+  //   Serial.print(myBal2Vol,4);
+  //   Serial.print(", ");
+  // }
   if(!myCrcCheck[bme_addr] && !balTempCon[bme_addr]){
     for(int current_cell=0;current_cell<VC_NUM;current_cell++){
-      if(myVoltage[bme_addr][current_cell] - myBal2Vol > myBalTolerance){
+      // if(bme_addr==0){
+      //   Serial.print(current_cell+1);
+      //   Serial.print(": ");
+      //   // Serial.print((myVoltage[bme_addr][current_cell] - myBal2Vol)*1000,1);
+      //   Serial.print(myVoltage[bme_addr][current_cell],4);
+      //   Serial.print(", ");
+      // }
+      if((myVoltage[bme_addr][current_cell] - myBal2Vol) > myBalTolerance){
         myDcc[bme_addr] |= (1<<(VC_NUM-current_cell-1));// balance by enabling the bit flag corresponding to the i-th virtual layer
       }  
     }
   }
+  // if(bme_addr==0)Serial.println(" ");
 }
 
 
@@ -214,7 +232,7 @@ uint8_t bmes::set_bal2vol(float bal2vol){
 
   for(int current_bme = 0; current_bme<BME_NUM; current_bme++) myDcc[current_bme]=0;
   if(bal2vol > 2.7){
-    myBal2Vol = bal2vol;
+    myBal2Vol = bal2vol ;// + myBalTolerance/2.0
     return 0;
   }
   else return -1;
@@ -418,10 +436,10 @@ float bmes::get_bme_totalV(uint8_t bme_addr){
 }
 
 /*!******************************************************************************************************************
- \brief get a internal chip myTemperature
+ \brief get a internal chip temperature
  @param[in] uint8_t bme_addr,  the BME address
 
- @return float myTemperature, the internal chip myTemperature of the given bme
+ @return float temperature, the internal chip temperature of the given bme
  ******************************************************************************************************************/
 float bmes::get_bme_itmp(uint8_t bme_addr){
   if(bme_addr<BME_NUM && bme_addr>= 0) return myInternal_temp[bme_addr];
@@ -578,10 +596,10 @@ float bmes::cal_min_vol(uint8_t bme_addr){
 }
 
 /*!******************************************************************************************************************
- \brief calculate the max myTemperature on a bme
+ \brief calculate the max temperature on a bme
  @param[in] uint8_t bme_addr,  the BME address
 
- @return float myVoltage,  the max cell myTemperature
+ @return float temp,  the max cell temperature
  ******************************************************************************************************************/
 float bmes::cal_max_temp(uint8_t bme_addr){ 
   float maxTemp=myTemperature[bme_addr][0];
@@ -593,10 +611,10 @@ float bmes::cal_max_temp(uint8_t bme_addr){
 }
 
 /*!******************************************************************************************************************
- \brief calculate the max myTemperature on a bme
+ \brief calculate the max temperature on a bme
  @param[in] uint8_t bme_addr,  the BME address
 
- @return float myVoltage,  the max cell myTemperature
+ @return float temp,  the max cell temperature
  ******************************************************************************************************************/
 float bmes::cal_min_temp(uint8_t bme_addr){ 
   float minTemp=myTemperature[bme_addr][0];
@@ -911,6 +929,7 @@ void bmes::set_flag_over(uint16_t priority2Flag){
 *************************************************/
 void bmes::set_meas_flags()
 {
+  myFanAll = false;
   for(int current_bme = 0; current_bme<BME_NUM; current_bme++)
   {
     // set miss communication flag
@@ -928,17 +947,30 @@ void bmes::set_meas_flags()
 
     // low myVoltage checks
     float minVol=cal_min_vol(current_bme);
-    // set dead battery alarm
-    if (minVol < myDeadBatAlarm) myBmeFlag[current_bme] |= (1<<8);
+    // set battery alarm
+    if (minVol < myDeadBatAlarm){
+      myBmeFlag[current_bme] |= (1<<8);
+      myBmeFlag[current_bme] &= ~(1<<7);
+      myBmeFlag[current_bme] &= ~(1<<6);
+    }
     // set low myVoltage alarm
-    else if(minVol < myVolLowAlarm) myBmeFlag[current_bme] |= (1<<7);
+    else if(minVol < myVolLowAlarm){
+      // myBmeFlag[current_bme] &= ~(1<<8);
+      myBmeFlag[current_bme] |= (1<<7);
+      myBmeFlag[current_bme] &= ~(1<<6);
+    }
     // set low myVoltage warning 
-    else if(minVol < myVolLowWarn) myBmeFlag[current_bme] |= (1<<6);
-
-    // set bme mismatch alarm
-    if(abs(myTotal_bme_vol[current_bme]-cal_bme_sum(current_bme)) > myVolBmeMismatch){
-      myBmeFlag[current_bme] |= (1<<9);
+    else if(minVol < myVolLowWarn){
+      // myBmeFlag[current_bme] &= ~(1<<8);
+      // myBmeFlag[current_bme] &= ~(1<<7);
+      myBmeFlag[current_bme] |= (1<<6);
     } 
+
+    // set bme mismatch alarm if there is a mismatch for more than 0.5 sec
+    if(abs(myTotal_bme_vol[current_bme]-cal_bme_sum(current_bme)) > myVolBmeMismatch){
+      if(myBmeMismatchTimer.check()) myBmeFlag[current_bme] |= (1<<9);
+    } 
+    else myBmeMismatchTimer.reset();
 
     // high myTemperature checks
     float maxTemp=cal_max_temp(current_bme);
@@ -957,12 +989,18 @@ void bmes::set_meas_flags()
 
      // tempearture control for balancing 
     balTempCon[current_bme]=false;
-    if(myHs_temp[current_bme] > myTempHSAlarm-5 || myInternal_temp[current_bme] > myTempTiAlarm-5 || myHs_temp[current_bme] < myLowTempAlarm){
+    if(myHs_temp[current_bme] > myTempHSWarn-5 || myInternal_temp[current_bme] > myTempTiWarn-5 || myHs_temp[current_bme] < myLowTempAlarm){
       balTempCon[current_bme]=true;
+      // Serial.print("bme: ");
+      // Serial.println(current_bme+1);
+    } 
+
+    // trun fan on if approaching warning temperature
+    if(myHs_temp[current_bme] > myTempHSWarn-5 || myInternal_temp[current_bme] > myTempTiWarn-5 || maxTemp>myTempVCWarn-5){
+      myFanAll |= true;
     } 
 
   }
-
 
 }
 
@@ -992,13 +1030,13 @@ void bmes::set_st_flags()
  The function is used to read the status of the LTC6804.
  This function will send a start conversion command, wait then
  send the requested read commands parse the data
- and store the cell myTemperature in total_vol_data and 
+ and store the cell temperature in total_vol_data and 
  itemp_data variables. 
  
 @param[out] uint8_t temp_data[BME_NUM*TEMP_NUM*2];
-@param[out] float myTemperature[BME_NUM][TEMP_NUM];
-An array of the parsed cell myTemperature from highest to lowest. 
- The cell myTemperature will be stored in the temp_data[] array 
+@param[out] float temperature[BME_NUM][TEMP_NUM];
+An array of the parsed cell temperature from highest to lowest. 
+ The cell temperature will be stored in the temp_data[] array 
  and in a myVoltage matrix
   
  @return int16_t, PEC Status.
@@ -1042,16 +1080,16 @@ uint16_t bmes::meas_stat()
 }
 
 /***********************************************//**
- \brief Measures, Reads and parses the BMEs cell myTemperature registers.
+ \brief Measures, Reads and parses the BMEs cell temperature registers.
  
- The function is used to read the cell myTemperature of the LTC6804.
+ The function is used to read the cell temperature of the LTC6804.
  This function will send a start conversion command, wait then
  send the requested read commands parse the data
- and store the cell myTemperature in temp_data and ref_data variables. 
+ and store the cell temperature in temp_data and ref_data variables. 
  
 @param[out] uint8_t temp_data[BME_NUM*TEMP_NUM*2];
-@param[out] float myTemperature[BME_NUM][TEMP_NUM];
-An array of the parsed cell myTemperature from highest to lowest. The cell myTemperature will
+@param[out] float temperature[BME_NUM][TEMP_NUM];
+An array of the parsed cell temperature from highest to lowest. The cell temperature will
   be stored in the temp_data[] array and in a myVoltage matrix
   
  @return int16_t, PEC Status.
@@ -1067,9 +1105,13 @@ uint16_t bmes::meas_temp()
   uint8_t tempo_data[12];
   bool crc_tempo;
 
+  // wakeup_idle();//This will guarantee that the BMEs isoSPI port is awake. This command can be removed.
+  // bme_adax(); // send broadcast cell gpio conversion to all BMEs on this channel
+  // delayMicroseconds(BME_CON_DELAY_AUX); // waits for conversion to finish
   bme_adax(); // send broadcast cell gpio conversion to all BMEs on this channel
   delayMicroseconds(BME_CON_DELAY_AUX); // waits for conversion to finish
   wakeup_idle();//This will guarantee that the BMEs isoSPI port is awake. This command can be removed.
+
   for(int current_bme = 0; current_bme < BME_NUM; current_bme++)
   {
     cmd[0]=0x80 + (reverse[current_bme]<<3);  // set the BMEs address
@@ -1190,20 +1232,37 @@ void bmes::data2temp(uint16_t crc_check)
         if(tempo==0) myTemperature[current_bme][current_temp]=-273;
         else{
           tempo=tempo*0.0001;
-          tempo=tempo/(myVol_ref2[current_bme]-tempo); 
-          tempo=T0inv + Binv*log(tempo);
-          myTemperature[current_bme][current_temp]=1.0/tempo-273;
+          if(tempo==myVol_ref2[current_bme]) myTemperature[current_bme][current_temp]=-273;
+          else{
+            tempo=tempo/(myVol_ref2[current_bme]-tempo);
+            if(tempo==0)myTemperature[current_bme][current_temp]=-273;
+            else{
+              tempo=T0inv + Binv*log(tempo);
+              if(tempo==273)myTemperature[current_bme][current_temp]=-273;
+              else myTemperature[current_bme][current_temp]=1.0/tempo-273;
+              if(isnan(myTemperature[current_bme][current_temp])) myTemperature[current_bme][current_temp]=-273;
+            }
+          }
         }
+        
       }
       tempo= ((myHs_data[2*current_bme+1]<<8) | myHs_data[2*current_bme]);
       if(tempo==0) myHs_temp[current_bme]=-273;
       else{
         tempo=tempo*0.0001;
-        tempo=tempo/(myVol_ref2[current_bme]-tempo); 
-        tempo=T0inv + Binv*log(tempo);
-        myHs_temp[current_bme]=1.0/tempo-273;
+        if(tempo==myVol_ref2[current_bme])myHs_temp[current_bme]=-273;
+        else{
+          tempo=tempo/(myVol_ref2[current_bme]-tempo);
+          if(tempo==0)myHs_temp[current_bme]=-273;
+          else{ 
+            tempo=T0inv + Binv*log(tempo);
+            if(tempo==273)myHs_temp[current_bme]=-273;
+            else myHs_temp[current_bme]=1.0/tempo-273;
+            if(isnan(myHs_temp[current_bme])) myHs_temp[current_bme]=-273;
+          }
+        }
       }
-    } 
+    }
   }
 }
 
@@ -1263,7 +1322,7 @@ void bmes::bme_wrcfg(uint8_t addr)
   cmd[1]=0x01;            // the command for WRCFG
   
   cfg[0]=0xff;
-  if(myFanOn[addr]) cfg[0]=0x7f;  // set the fan on 
+  if(myFanOn[addr] | myFanAll) cfg[0]=0x7f;  // set the fan on 
   for(int i=0;i<3;i++){
     cfg[i+1]=vouv[i];      // set the myVoltage under/over limits
   }

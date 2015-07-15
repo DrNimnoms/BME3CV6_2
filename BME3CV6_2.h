@@ -208,6 +208,9 @@ static const unsigned char reverse[16] = {   // used to reverse the 4 bit number
 #define TEMP_NUM 3
 #define myHs_temp_NUM 4
 
+// time parameters
+#define BME_MISMATCH_TIME 500 // in milliseconds
+
 // initialize the SPI communication with clock divider and spi mode
 void bme_com_initialize(uint8_t clock_div, uint8_t spi_mode);
 
@@ -290,7 +293,7 @@ private:
     float myTempTiWarn;    //BME LTC chip myTemperature limit for myTemperature warning
     float myTempHSWarn;   //heat sink myTemperature limit for myTemperature warning
     float myLowTempAlarm;  // Low myTemperature sensors limit for low myTemperature alarm 
-
+    Metro myBmeMismatchTimer = Metro(BME_MISMATCH_TIME); // 0.5 sec timer for mismatch flag
 	//data from BME
 	uint8_t vol_data[BME_NUM*VC_NUM*BYTE_INT];    // array of virtual cell myVoltages
 	uint8_t temp_data[BME_NUM*TEMP_NUM*BYTE_INT];  // temperature of: 0-2 = virtual cells
@@ -328,6 +331,7 @@ private:
     bool balTempCon[BME_NUM];
 
     // cooling prameters
+    bool myFanAll;
     bool myFanOn[BME_NUM];		// controlls all fans
 	
     // set flags
