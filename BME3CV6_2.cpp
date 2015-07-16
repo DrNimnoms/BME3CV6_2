@@ -148,12 +148,9 @@ void bmes::meas_act_bmes(){
 
   for(int current_bme = 0; current_bme<BME_NUM; current_bme++){
     myDcc[current_bme]=0;
-    // Serial.print(balTempCon[current_bme]);
-    // Serial.print(",");
     if(myBalOn) balance_bme(current_bme);
     bme_wrcfg(current_bme);
   } 
-  // Serial.println(" ");
   int2bool(BME_NUM,crc_tempo, myCrcCheck);
 }
 
@@ -162,25 +159,14 @@ void bmes::meas_act_bmes(){
  puts all the information in myDcc
 *****************************************************/
 void bmes::balance_bme(uint8_t bme_addr){
-  // if(bme_addr==0){
-  //   Serial.print(myBal2Vol,4);
-  //   Serial.print(", ");
-  // }
+
   if(!myCrcCheck[bme_addr] && !balTempCon[bme_addr]){
     for(int current_cell=0;current_cell<VC_NUM;current_cell++){
-      // if(bme_addr==0){
-      //   Serial.print(current_cell+1);
-      //   Serial.print(": ");
-      //   // Serial.print((myVoltage[bme_addr][current_cell] - myBal2Vol)*1000,1);
-      //   Serial.print(myVoltage[bme_addr][current_cell],4);
-      //   Serial.print(", ");
-      // }
       if((myVoltage[bme_addr][current_cell] - myBal2Vol) > myBalTolerance){
         myDcc[bme_addr] |= (1<<(VC_NUM-current_cell-1));// balance by enabling the bit flag corresponding to the i-th virtual layer
       }  
     }
   }
-  // if(bme_addr==0)Serial.println(" ");
 }
 
 
@@ -991,8 +977,6 @@ void bmes::set_meas_flags()
     balTempCon[current_bme]=false;
     if(myHs_temp[current_bme] > myTempHSWarn-5 || myInternal_temp[current_bme] > myTempTiWarn-5 || myHs_temp[current_bme] < myLowTempAlarm){
       balTempCon[current_bme]=true;
-      // Serial.print("bme: ");
-      // Serial.println(current_bme+1);
     } 
 
     // trun fan on if approaching warning temperature
@@ -1142,7 +1126,6 @@ uint16_t bmes::meas_temp()
         // for(int i=0;i<2;i++) myHs_data[2*current_bme+i]= tempo_data[i+6];
         for(int i=0;i<2;i++) ref_data[2*current_bme+i]= tempo_data[i+10];
     }
-    // Serial.println(myHs_data[current_bme*2],HEX);
   }
   return crc_array;
 }
