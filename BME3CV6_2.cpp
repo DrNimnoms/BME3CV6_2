@@ -979,10 +979,15 @@ void bmes::set_meas_flags()
       balTempCon[current_bme]=true;
     } 
 
-    // trun fan on if approaching warning temperature
-    if(myHs_temp[current_bme] > myTempHSWarn-5 || myInternal_temp[current_bme] > myTempTiWarn-5 || maxTemp>myTempVCWarn-5){
+    // trun fan on if approaching alarm temperature and not running low on power
+    if(maxTemp>myTempVCAlarm-5 && minVol > 3.0){
       myFanAll |= true;
     } 
+    // trun fan on if approaching warning temperature during Balancing
+    myFanOn[current_bme] = false;
+    if(myBalOn && (myHs_temp[current_bme] > myTempHSWarn-5 || myInternal_temp[current_bme] > myTempTiWarn-5)){
+      myFanOn[current_bme] = true;
+    }
 
   }
 
