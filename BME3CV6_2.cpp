@@ -91,10 +91,10 @@ bmes::bmes(uint8_t csPin)
     myDeadBatAlarm = 2.5;   // the myVoltage at which the system will not go in to charge mode
     myVolBmeMismatch  = 0.06;   //myVoltage mismatch limit between calculated and measured total myVoltage of battery module
     myTempVCAlarm = 60;    //virtual cell myTemperature limit for myTemperature error
-    myTempTiAlarm = 75;    // BME LTC chip myTemperature limit for myTemperature error
+    myTempTiAlarm = 85;    // BME LTC chip myTemperature limit for myTemperature error
     myTempHSAlarm = 140;   //heat sink myTemperature limit for myTemperature error
     myTempVCWarn = 40;    //virtual cell myTemperature limit for myTemperature warning
-    myTempTiWarn = 65;    //BME LTC chip myTemperature limit for myTemperature warning
+    myTempTiWarn = 75;    //BME LTC chip myTemperature limit for myTemperature warning
     myTempHSWarn = 125;   //heat sink myTemperature limit for myTemperature warning
     myLowTempAlarm = -40; // Low myTemperature sensors limit for low myTemperature alarm     
 }
@@ -781,7 +781,7 @@ uint16_t bmes::bme_statst()
         temp_data=((temp_data_array[2*j+1]<<8) | temp_data_array[2*j]);
         if(temp_data != SELF_CHECK_VAL_1) self_test_data |= (1<<current_bme);
       }
-      if(((temp_data_array[11]>>1) & 0x01)==1) self_test_data |= (1<<current_bme);
+      // if(((temp_data_array[11]>>1) & 0x01)==1) self_test_data |= (1<<current_bme);
     }
   }
   return self_test_data;
@@ -961,11 +961,19 @@ void bmes::set_meas_flags()
     // high myTemperature checks
     float maxTemp=cal_max_temp(current_bme);
     // set high tempearture alarm
-    if(maxTemp>myTempVCAlarm || myHs_temp[current_bme] > myTempHSAlarm || myInternal_temp[current_bme] > myTempTiAlarm){
+    
+    if(maxTemp > myTempVCAlarm){
       myBmeFlag[current_bme] |= (1<<10);
     }
-    else if(maxTemp>myTempVCWarn || myHs_temp[current_bme] > myTempHSWarn || myInternal_temp[current_bme] > myTempTiWarn){
+    else if(maxTemp>myTempVCWarn){
       myBmeFlag[current_bme] |= (1<<11);
+    }
+
+    if(myHs_temp[current_bme] > myTempHSAlarm || myInternal_temp[current_bme] > myTempTiAlarm){
+      myBmeFlag[current_bme] |= (1<<13);
+    }
+    else if(myHs_temp[current_bme] > myTempHSWarn || myInternal_temp[current_bme] > myTempTiWarn){
+      myBmeFlag[current_bme] |= (1<<14);
     }
 
     // set low myTemperature alarm
